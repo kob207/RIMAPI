@@ -1,0 +1,7 @@
+version: "3.5"
+services:
+  rimapi:
+    container_name: api
+    build: .
+    ports:
+      - "5050:5050"

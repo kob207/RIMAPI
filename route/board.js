@@ -1,23 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const multer = require('multer');
-const Board = require("../models/Board");
+const multer = require("multer");
+const Board = require("../models/board");
 const url = "http://localhost:5050";
 
 const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, './public/uploads/');
-   // cb(null, path.join(__dirname, '../uploads/'))
+  destination: function (req, file, cb) {
+    cb(null, "./public/uploads/");
+    // cb(null, path.join(__dirname, '../uploads/'))
   },
-  filename: function(req, file, cb) {
-    cb(null, new Date().toISOString().replace(/:/g, '-') + file.originalname);
-  }
+  filename: function (req, file, cb) {
+    cb(null, new Date().toISOString().replace(/:/g, "-") + file.originalname);
+  },
 });
 
 const fileFilter = (req, file, cb) => {
   // reject a file
-  if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
     cb(null, true);
   } else {
     cb(null, false);
@@ -27,33 +27,31 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 1024 * 1024 * 5
+    fileSize: 1024 * 1024 * 5,
   },
-  fileFilter: fileFilter
+  fileFilter: fileFilter,
 });
-
-
 
 router.get("/", (req, res, next) => {
   Product.find()
     .select("name detail _id boardImage")
     .exec()
-    .then(docs => {
+    .then((docs) => {
       const response = {
         count: docs.length,
-        products: docs.map(doc => {        
+        products: docs.map((doc) => {
           return {
             name: doc.name,
             detail: doc.detail,
-            img: doc.boardImage,            
+            img: doc.boardImage,
             _id: doc._id,
 
             request: {
               type: "GET",
-              url: url + "/board/" + doc._id
-            }
+              url: url + "/board/" + doc._id,
+            },
           };
-        })
+        }),
       };
       //   if (docs.length >= 0) {
       res.status(200).json(response);
@@ -63,53 +61,48 @@ router.get("/", (req, res, next) => {
       //       });
       //   }
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).json({
-        error: err
+        error: err,
       });
     });
 });
 
-router.post("/", upload.single('boardImage'), (req, res, next) => {
-    console.log("posss");
-  var io = req.app.get('socketio');
-  let message ={"group_name":"a",
-  "remain":"ทดสอบ",
-  
-  }   
-  
+router.post("/", upload.single("boardImage"), (req, res, next) => {
+  console.log("posss");
+  var io = req.app.get("socketio");
+  let message = { group_name: "a", remain: "ทดสอบ" };
+
   const board = new Board({
-    _id: new mongoose.Types.ObjectId(), 
+    _id: new mongoose.Types.ObjectId(),
     name: req.body.name,
     detail: req.body.detail,
-    boardImage: req.file.path.replace('public\\','') 
+    boardImage: req.file.path.replace("public\\", ""),
   });
   board
     .save()
-    .then(result => {
-     // console.log(result);  
-     
+    .then((result) => {
+      // console.log(result);
+
       res.status(201).json({
-        
         message: "Created board successfully",
         createdBoard: {
-         
-            name: result.name,
-            detail: result.detail,
-            _id: result._id,
-            request: {
-                type: 'GET',
-                url:url + "/board/" + result._id
-            }
-        }
+          name: result.name,
+          detail: result.detail,
+          _id: result._id,
+          request: {
+            type: "GET",
+            url: url + "/board/" + result._id,
+          },
+        },
       });
-      io.emit("board"    ,message);   
+      io.emit("board", message);
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).json({
-        error: err
+        error: err,
       });
     });
 });
@@ -117,17 +110,17 @@ router.post("/", upload.single('boardImage'), (req, res, next) => {
 router.get("/:boardId", (req, res, next) => {
   const id = req.params.productId;
   Product.findById(id)
-    .select('name detail _id boardImage')
+    .select("name detail _id boardImage")
     .exec()
-    .then(doc => {
+    .then((doc) => {
       console.log("From database", doc);
       if (doc) {
         res.status(200).json({
-            product: doc,
-            request: {
-                type: 'GET',
-                url: url + '/board'
-            }
+          product: doc,
+          request: {
+            type: "GET",
+            url: url + "/board",
+          },
         });
       } else {
         res
@@ -135,7 +128,7 @@ router.get("/:boardId", (req, res, next) => {
           .json({ message: "No valid entry found for provided ID" });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).json({ error: err });
     });
@@ -149,19 +142,19 @@ router.patch("/:boardId", (req, res, next) => {
   }
   Board.update({ _id: id }, { $set: updateOps })
     .exec()
-    .then(result => {
+    .then((result) => {
       res.status(200).json({
-          message: 'Product updated',
-          request: {
-              type: 'GET',
-              url: url +  '/board/' + id
-          }
+        message: "Product updated",
+        request: {
+          type: "GET",
+          url: url + "/board/" + id,
+        },
       });
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).json({
-        error: err
+        error: err,
       });
     });
 });
@@ -170,20 +163,20 @@ router.delete("/:boardId", (req, res, next) => {
   const id = req.params.boardId;
   Board.remove({ _id: id })
     .exec()
-    .then(result => {
+    .then((result) => {
       res.status(200).json({
-          message: 'Board deleted',
-          request: {
-              type: 'POST',
-              url: url + '/board',
-              body: { name: 'String', price: 'Number' }
-          }
+        message: "Board deleted",
+        request: {
+          type: "POST",
+          url: url + "/board",
+          body: { name: "String", price: "Number" },
+        },
       });
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).json({
-        error: err
+        error: err,
       });
     });
 });
